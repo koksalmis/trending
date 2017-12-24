@@ -18,6 +18,37 @@
     </dependency>
         <!-- buraya kadar -->
     </dependencies>
-
-
+    <!-- jar üretmek için eklenen kısım buradan -->
+    <build>
+        <finalName>trending</finalName> <!-- bu bize proje adından bağımsız jar dosyasına isim vermemizi sağlıyor -->
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId> <!-- Kullandığımız maven plugin'inin adı -->
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef> <!-- bu bize jar'ı bütün dependicy'leri ile oluşturmamızı
+                                                                                 sağlıyor-->
+                    </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId> <!-- bu ise jar dosyasının adına "jar-with-dependencies" eklenmesini
+                                                                    önlüyor-->
+                    <archive>
+                        <manifest>
+                            <mainClass>Main</mainClass>        <!-- burada main sıfımızın yerini gösterdik eğer farklı paketler
+                                                                    kullanıyorsanız main sınıfının yolunu tam yazın
+                                                                    paketadı/Main gibi.-->
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <!-- buraya kadar -->
 </project>
