@@ -7,7 +7,7 @@ public interface CommandLine {
     // Hocanın verdiği seçenekleri yaratmak için @Option etiketini kullanıyoruz
     //
 
-    @Option(shortName = "n") // entity sayısı için olan seçenek "-n" ile de ulaşılabilir. Parantez içi kısa adı
+    @Option(defaultValue = "10",shortName = "n") // entity sayısı için olan seçenek "-n" ile de ulaşılabilir. Parantez içi kısa adı
                              // belirtmek için.
 
     int getNumber();         // bu ise o seçeneğin değerine hangi method ile ulaşacağımızı belirlediğimiz kısım.

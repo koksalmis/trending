@@ -1,30 +1,89 @@
 
 import com.lexicalscope.jewel.cli.CliFactory;
+
 import java.io.*;
-public class Main{
-    
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class Main {
+
     public static void main(String[] args) {
 
+        String regexForMention = "([@][\\w_]+)";
+        String regexForHastag = "([#][\\w_]+)";
+
+        Pattern patternForHastag = Pattern.compile(regexForHastag);
+        Pattern patternForMention = Pattern.compile(regexForMention);
+
         CommandLine result = CliFactory.parseArguments(CommandLine.class, args);
-
-
         String entityName = result.getEntity();       // girilen entity name'i okuyor mention mi hastag mi?
         System.out.println("Entity is : " + entityName);
 
-        int numberOfEntity = result.getNumber();
+        int numberOfEntity = 0;
+        numberOfEntity = result.getNumber();
         System.out.println("Number of entity is : " + numberOfEntity + "\n"); // girilen entity sayısı 10,20,30 vs. ?
 
-        boolean bol = result.isReverse();           // Tersten mi değil mi ?
-        System.out.println("Is reversed ? : " + bol);
+        boolean reversed = result.isReverse();           // Tersten mi değil mi ?
+        System.out.println("Is reversed ? : " + reversed);
 
-        boolean bol2 = result.isIgnore();          // Büyük-küçük olayı görmezden gelinsin mi gelinmesin mi ?
-        System.out.println("Is ignored : ? " + bol2);
+        boolean ignored = result.isIgnore();          // Büyük-küçük olayı görmezden gelinsin mi gelinmesin mi ?
+        System.out.println("Is ignored : ? " + ignored);
 
         String fileName = result.fileName();       // Bu da en son okuyacağımız text dosyasının adını dönderiyor.
-         System.out.println("filename is : " + fileName);
+        System.out.println("filename is : " + fileName);
 
 
-        // This will reference one line at a time
+
+        if (entityName.toLowerCase().equals("mention")) {
+            if (ignored) {
+                if (reversed) {
+                    printMapReversedOrder(putValuesToHasmapWithIgnored(fileName, patternForMention),numberOfEntity);
+                } else {
+                    printMapNotReversedOrder(putValuesToHasmapWithIgnored(fileName, patternForMention), numberOfEntity);
+                }
+
+            } else {
+
+                if (reversed) {
+                    printMapReversedOrder(putValuesToHasmapWithNotIgnored(fileName, patternForMention),numberOfEntity);
+                } else {
+                    printMapNotReversedOrder(putValuesToHasmapWithNotIgnored(fileName, patternForMention), numberOfEntity);
+                }
+
+            }
+
+        } else if (entityName.toLowerCase().equals("hashtag")) {
+
+            if (ignored) {
+                if (reversed) {
+                    printMapReversedOrder(putValuesToHasmapWithIgnored(fileName, patternForHastag),numberOfEntity);
+                } else {
+                    printMapNotReversedOrder(putValuesToHasmapWithIgnored(fileName, patternForHastag),numberOfEntity);
+                }
+
+            } else {
+
+                if (reversed) {
+                    printMapReversedOrder(putValuesToHasmapWithNotIgnored(fileName, patternForHastag),numberOfEntity);
+                } else {
+                    printMapNotReversedOrder(putValuesToHasmapWithNotIgnored(fileName, patternForHastag),numberOfEntity);
+                }
+
+            }
+
+        } else {
+            System.out.println("please give a correct argument; it can be \"mention\" or \"hashtag\"");
+        }
+
+    }
+
+    public static HashMap<String, Integer> putValuesToHasmapWithNotIgnored(String fileName, Pattern pattern) {
+        HashMap<String, Integer> resultHashMap = new HashMap<>();
+
         String line = null;
 
         try {
@@ -36,19 +95,26 @@ public class Main{
             BufferedReader bufferedReader =
                     new BufferedReader(fileReader);
 
-            while((line = bufferedReader.readLine()) != null) {
-                System.out.println(line+"\n");
+            while ((line = bufferedReader.readLine()) != null) {
+                Matcher matcher = pattern.matcher(line);
+                while (matcher.find()) {
+                    if (resultHashMap.containsKey(matcher.group())) {
+                        int keyValue = resultHashMap.get(matcher.group());
+                        keyValue++;
+                        resultHashMap.put(matcher.group(), keyValue);
+                    } else {
+                        resultHashMap.put(matcher.group(), 1);
+                    }
+                }
+
             }
 
-            // Always close files.
             bufferedReader.close();
-        }
-        catch(FileNotFoundException ex) {
+        } catch (FileNotFoundException ex) {
             System.out.println(
                     "Unable to open file '" +
                             fileName + "'");
-        }
-        catch(IOException ex) {
+        } catch (IOException ex) {
             System.out.println(
                     "Error reading file '"
                             + fileName + "'");
@@ -56,7 +122,86 @@ public class Main{
             // ex.printStackTrace();
         }
 
+        return resultHashMap;
+    }
+
+    public static HashMap<String, Integer> putValuesToHasmapWithIgnored(String fileName, Pattern pattern) {
+        HashMap<String, Integer> resultHashMap = new HashMap<>();
+
+        String line = null;
+
+        try {
+            // FileReader reads text files in the default encoding.
+            FileReader fileReader =
+                    new FileReader(fileName);
+
+            // Always wrap FileReader in BufferedReader.
+            BufferedReader bufferedReader =
+                    new BufferedReader(fileReader);
+
+            while ((line = bufferedReader.readLine()) != null) {
+                Matcher matcher = pattern.matcher(line);
+                while (matcher.find()) {
+                    if (resultHashMap.containsKey(matcher.group().toLowerCase())) {
+                        int keyValue = resultHashMap.get(matcher.group().toLowerCase());
+                        keyValue++;
+                        resultHashMap.put(matcher.group().toLowerCase(), keyValue);
+                    } else {
+                        resultHashMap.put(matcher.group().toLowerCase(), 1);
+                    }
+                }
+
+            }
+
+            bufferedReader.close();
+        } catch (FileNotFoundException ex) {
+            System.out.println(
+                    "Unable to open file '" +
+                            fileName + "'");
+        } catch (IOException ex) {
+            System.out.println(
+                    "Error reading file '"
+                            + fileName + "'");
+            // Or we could just do this:
+            // ex.printStackTrace();
+        }
+
+        return resultHashMap;
+    }
+
+    public static void printMapNotReversedOrder(Map map, int entityNumber) {
+
+        Object[] b = map.entrySet().toArray();
+        Arrays.sort(b, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                return ((Map.Entry<String, Integer>) o2).getValue()
+                        .compareTo(((Map.Entry<String, Integer>) o1).getValue());
+            }
+        });
+
+        for (int i = 0; i < entityNumber; i++) {
+            System.out.println(((Map.Entry<String, Integer>) b[i]).getKey() + "\t"
+                    + (((Map.Entry<String, Integer>) b[i]).getValue()));
+        }
 
     }
+
+    public static void printMapReversedOrder(Map map, int entityNumber) {
+
+        Object[] b = map.entrySet().toArray();
+        Arrays.sort(b, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                return ((Map.Entry<String, Integer>) o2).getValue()
+                        .compareTo(((Map.Entry<String, Integer>) o1).getValue());
+            }
+        });
+
+        for (int i = b.length-1; i > (b.length - 1 - entityNumber); i--) {
+            System.out.println(((Map.Entry<String, Integer>) b[i]).getKey() + "\t"
+                    + (((Map.Entry<String, Integer>) b[i]).getValue()));
+        }
+
+    }
+
 
 }
